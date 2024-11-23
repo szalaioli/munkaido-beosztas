@@ -1,0 +1,1265 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fejér Vármegye Forgalmi Szolgálat</title>
+    <!-- DHTMLX Scheduler CSS és JavaScript -->
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/scheduler/edge/dhtmlxscheduler.css">
+    <script src="https://cdn.dhtmlx.com/scheduler/edge/dhtmlxscheduler.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .dhx_cal_container {
+            margin-bottom: 100px; /* Hely biztosítása a lábléc számára */
+            flex-grow: 1; /* A naptár kitölti a rendelkezésre álló helyet */
+            overflow: auto; /* Görgetés engedélyezése sok esemény esetén */
+        }
+
+        .dhx_cal_event {
+            margin-bottom: 5px; /* Távolság az események között */
+        }
+
+        .event-text-box {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px; /* Távolság a dobozok között */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Finom árnyék */
+            text-align: center; /* Középre igazított szöveg */
+        }
+
+        .dhx_cal_event_clear {
+            background-color: rgba(128, 0, 128, 0.3) !important; /* Lila háttér átlátszósággal */
+            color: white !important; /* Fehér szöveg */
+            border: none; /* Esetleg eltávolíthatod a keretet */
+        }
+        
+
+        /* Példa műszak színekre */
+        .event-color-ff0000 {
+            background-color: #ff0000 !important;
+            color: white !important;
+        }
+
+        .event-color-00ff00 {
+            background-color: #00ff00 !important;
+            color: white !important;
+        }
+
+   
+
+h1 {
+    text-align: center;
+    color: #4a90e2;
+}
+
+.drag-area {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.drag-area div {
+    width: 45%;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    min-height: 150px;
+}
+.merge-area {
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 2px dashed #4a90e2;
+    border-radius: 8px;
+    background-color: #f9f9fb;
+    min-height: 120px;
+    text-align: center;
+}
+.merge-area p {
+    margin: 5px 0;
+}
+.event-text-box {
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px; /* Távolság a dobozok között */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Finom árnyék */
+    text-align: center; /* Középre igazított szöveg */
+}
+.event-color-ff0000 {
+    background-color: #ff0000 !important;
+    color: white !important;
+}
+
+.event-color-00ff00 {
+    background-color: #00ff00 !important;
+    color: white !important;
+}
+#shiftList {
+    display: flex;
+    flex-wrap: wrap; /* Több sorba törés engedélyezése */
+    gap: 10px; /* Távolság a gombok között */
+    justify-content: center; /* Gombok középre igazítása */
+}
+
+#shiftList .delete-button {
+    position: absolute;
+    top: 1px; /* Felfelé mozgatás, hogy túlnyúljon */
+    right: 1px; /* Jobbra mozgatás, hogy túlnyúljon */
+    background-color: transparent; /* Átlátszó háttér */
+    color: #e74c3c; /* Piros szín */
+    border: none; /* Nincs keret */
+    border-radius: 0; /* Nincs lekerekítés */
+    font-size: 12px; /* Kis méret */
+    cursor: pointer;
+    padding: 0; /* Nincs extra tér */
+    line-height: 1; /* Szöveg középre igazítása */
+    transition: color 0.3s ease;
+    z-index: 10; /* Biztosítjuk, hogy a gomb mindig a kártya fölött legyen */
+}
+
+#shiftList .delete-button:hover {
+    color: #c0392b; /* Hover esetén sötétebb piros */
+}
+
+#shiftList p {
+    flex: 1 1 calc(33.333% - 10px);
+    max-width: calc(33.333% - 10px);
+    background-color: #e6f7ff;
+    color: #333;
+    padding: 10px 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    margin: 5px;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#shiftList p:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+
+#employeeList p {
+    flex: 1 1 calc(33.333% - 10px); /* 3 elem egy sorban */
+    max-width: calc(33.333% - 10px);
+    background-color: #7098aa;
+    color: #fff; /* Fehér szöveg */
+    padding: 10px 15px;
+    border-radius: 10px; /* Lekerekítettebb sarkok */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Finomabb árnyék */
+    margin: 5px;
+    font-size: 16px; /* Nagyobb, olvashatóbb betűméret */
+    text-align: center; /* Szöveg középre igazítása */
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Animáció lebegésre */
+}
+#employeeList p:hover {
+    transform: translateY(-3px); /* Lebegés hatás */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Erősebb árnyék lebegéskor */
+}
+
+.merged-employees {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    min-height: 100px;
+}
+.merged-entry {
+    position: relative;
+    padding: 10px;
+    background-color: #f0f8ff; /* Halvány kék */
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Finom árnyék */
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; /* Áttűnés */
+    cursor: pointer;
+}
+
+.merged-entry:hover {
+    transform: translateY(-3px); /* Lebegés hatás */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Erősebb árnyék lebegéskor */
+    background-color: #d0e8ff; /* Sötétebb kék háttér hover esetén */
+}
+
+.merged-entry:active {
+    transform: translateY(0); /* Kattintáskor visszaugrik */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15); /* Árnyék visszaáll */
+    background-color: #b0d4ff; /* Még sötétebb háttér kattintáskor */
+}
+
+#employeeList {
+    display: flex;
+    flex-wrap: wrap; /* Több sorba törik, ha a hely megtelik */
+    gap: 10px; /* Távolság az elemek között */
+    justify-content: flex-start; /* Az elemek kezdőpozícióhoz igazítása */
+}
+
+#employeeList p {
+    flex: 1 1 calc(33.333% - 10px); /* 3 elem egy sorban, figyelembe véve a gap-et */
+    max-width: calc(33.333% - 10px); /* Maximális szélesség */
+    box-sizing: border-box; /* Tartalom szélesség kezelése */
+    margin: 5px 0; /* Függőleges távolság */
+}
+
+.merged-entry {
+    position: relative;
+    padding: 10px;
+    background-color: #f0f8ff;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Törlőgomb stílus */
+.delete-button {
+    position: absolute;
+    top: -5px; /* A gomb kicsit kilógjon a dobozból */
+    right: -5px;
+    width: 18px;
+    height: 18px;
+    background-color: #e74c3c; /* Piros szín */
+    color: white; /* Fehér X */
+    border: none;
+    border-radius: 50%; /* Kör alak */
+    font-size: 12px; /* Kis méret */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.delete-button:hover {
+    background-color: #c0392b; /* Sötétebb piros lebegéskor */
+    transform: scale(1.1); /* Kicsit nagyobb lesz lebegéskor */
+}
+
+
+#summaryTableContainer {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#summaryTable {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 8px;
+}
+
+#summaryTable th,
+#summaryTable td {
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+}
+
+#summaryTable th {
+    background-color: #4a90e2;
+    color: white;
+}
+
+textarea {
+    width: 100%;
+    height: 50px; /* Magasság növelése */
+    resize: vertical; /* Méret növelése engedélyezett */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+}
+
+button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 8px 12px; /* Csökkentett padding */
+    margin: 5px; /* Egyenletes távolság */
+    border-radius: 5px; /* Lekerekített sarkok */
+    cursor: pointer;
+    font-size: 14px; /* Kisebb betűméret */
+    transition: background-color 0.3s ease;
+    min-width: 100px; /* Minimum szélesség a konzisztens megjelenéshez */
+}
+
+button:hover {
+    background-color: #357ab8;
+}
+
+.button-container button {
+    padding: 5px 10px; /* Még kisebb gombméret a containeren belül */
+    font-size: 12px; /* Kisebb betűméret */
+    border-radius: 4px; /* Kisebb lekerekítés */
+}
+
+input[type="date"] {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 200px;
+}
+select {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+.dhx_cal_event_line {
+    color: rgb(238, 224, 224) !important; /* Esemény szöveg színe fekete */
+}
+
+.dhx_cal_event_clear {
+    color: black !important; /* Többnapos események szöveg színe */
+}
+.default-event-style {
+    color: black !important; /* Szöveg fekete */
+}
+.event-24-hours {
+    color: black !important; /* Szöveg színe fekete */
+    background-color: rgba(200, 200, 200, 0.5) !important; /* Opcionális: háttérszín */
+}
+/* Hónap nézet celláinak szegélyvastagságának növelése */
+.dhx_month_body td {
+    border: 8px solid #000; /* 3px vastagságú fekete szegély beállítása */
+    box-sizing: border-box; /* biztosítja, hogy a border a teljes cellához tartozzon */
+}
+
+    </style>
+</head>
+<body>
+    <h1>Fejér Vármegye Forgalmi Szolgálat</h1>
+
+    <!-- Dolgozók és műszakok listázása -->
+    <div class="drag-area">
+        <div id="employeeList">
+            <h3>Dolgozók</h3>
+            <input type="file" id="employeeFile" accept=".xlsx" onchange="loadEmployeesFromExcel(event)">
+        </div>
+        <div id="shiftList">
+            <h3>Műszakok</h3>
+            <input type="file" id="shiftFile" accept=".xlsx" onchange="loadShiftsFromExcel(event)">
+        </div>
+    </div>
+    
+
+     <!-- Egyesítő mező -->
+     <div class="merge-area" id="mergeArea" ondrop="drop(event)" ondragover="allowDrop(event)">
+        <h3>Húzd ide a dolgozó nevét és a műszakot</h3>
+    </div>
+
+    <!-- Egyesítő gomb külön elhelyezve a mező alatt -->
+    <div id="mergeButtonContainer">
+        <button onclick="mergeEntries()">Egyesítés</button>
+    </div>
+    
+
+    <!-- Egyesített dolgozók listája -->
+    <div class="merged-employees" id="mergedEmployees" ondrop="dropOnMergedEmployees(event)" ondragover="allowDrop(event)">
+        <h3>Egyesített dolgozók</h3>
+    </div>
+
+    <div class="button-container">
+        <label for="eventDate" class="small-label">Válassz dátumot:</label>
+        <input type="date" id="eventDate" class="small-input">
+    
+        <button class="small-button" onclick="exportToExcel()">Excel mentése</button>
+        <button class="small-button" onclick="exportToImage()">Kép mentése</button>
+        <button class="small-button" onclick="saveScheduleToJSON()">JSON mentése</button>
+        <button class="small-button" onclick="loadScheduleFromJSON()">JSON betöltése</button>
+        <button class="small-button" onclick="openFullExportView()">Teljes Naptár Nézet</button>
+    </div>
+    
+    <div class="button-container">
+        <label for="employeeFilter" class="small-label">Dolgozó szűrés:</label>
+        <select id="employeeFilter" class="small-select" onchange="filterByEmployee()">
+            <option value="">Minden dolgozó</option>
+        </select>
+    
+        <label for="monthFilter" class="small-label">Hónap szűrés:</label>
+        <select id="monthFilter" class="small-select" onchange="filterByMonth()">
+            <option value="">Minden hónap</option>
+            <option value="January">Január</option>
+            <option value="February">Február</option>
+            <option value="March">Március</option>
+            <option value="April">Április</option>
+            <option value="May">Május</option>
+            <option value="June">Június</option>
+            <option value="July">Július</option>
+            <option value="August">Augusztus</option>
+            <option value="September">Szeptember</option>
+            <option value="October">Október</option>
+            <option value="November">November</option>
+            <option value="December">December</option>
+        </select>
+    </div>
+
+    <!-- Scheduler HTML elem -->
+     <div id="scheduler_header" style="text-align: center; margin-bottom: 20px; font-family: Arial, sans-serif;">
+         <h2 style="color: #4a90e2; margin: 10px 0;">Fejér Vármegye Forgalmi Szolgálat</h2>
+         <div style="display: flex; justify-content: center; align-items: center; gap: 40px;">
+             <div style="text-align: left;">
+                 <label for="preparedBy" style="font-weight: bold;">Készítette:</label>
+                 <input type="text" id="preparedBy" placeholder="Név" style="border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
+                 <span style="font-style: italic;">Forgalmi főmunkatárs</span>
+             </div>
+             <div style="text-align: left;">
+                 <label for="approvedBy" style="font-weight: bold;">Jóváhagyta:</label>
+                 <input type="text" id="approvedBy" placeholder="Név" style="border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
+                 <span style="font-style: italic;">Forgalmi üzemvezető</span>
+             </div>
+         </div>
+         <p style="margin-top: 10px;"><strong>Munkavégzés helye:</strong> Székesfehérvár Piactér 4-8 Autóbusz pályaudvar</p>
+     </div>
+     
+     
+    <div id="scheduler_here" class="dhx_cal_container" style="width: 100%; height: 600px;">
+        <div class="dhx_cal_navline">
+            <div class="dhx_cal_prev_button">&nbsp;</div>
+            <div class="dhx_cal_next_button">&nbsp;</div>
+            <div class="dhx_cal_today_button"></div>
+            <div class="dhx_cal_date"></div>
+            <div class="dhx_cal_tab" name="day_tab" style="right: 20px;"></div>
+            <div class="dhx_cal_tab" name="week_tab" style="right: 140px;"></div>
+            <div class="dhx_cal_tab" name="month_tab" style="right: 76px;"></div>
+        </div>
+        <div class="dhx_cal_header"></div>
+        <div class="dhx_cal_data"></div>
+    </div>
+
+    
+    
+    <!-- Összesítő táblázat -->
+    <div id="summaryTableContainer">
+        <h3>Dolgozók ledolgozott órái</h3>
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th>Dolgozó</th>
+                    <th>Hónap</th>
+                    <th>Összes Ledolgozott Óra</th>
+                    <th>Részletek</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    
+    
+    <script>
+        let shiftDurations = {};
+        let notesData = {}; // Globális objektum a jegyzetek tárolására
+    
+        document.addEventListener("DOMContentLoaded", function () {
+                // Táblázat mozgatásához szükséges kód
+                const tableContainer = document.getElementById('summaryTableContainer');
+                let isDragging = false;
+                let offsetX, offsetY;
+        
+                tableContainer.addEventListener('mousedown', function (e) {
+                    isDragging = true;
+                    offsetX = e.clientX - tableContainer.offsetLeft;
+                    offsetY = e.clientY - tableContainer.offsetTop;
+                    tableContainer.style.cursor = "grabbing";
+                });
+        
+                document.addEventListener('mousemove', function (e) {
+                    if (isDragging) {
+                        tableContainer.style.left = (e.clientX - offsetX) + 'px';
+                        tableContainer.style.top = (e.clientY - offsetY) + 'px';
+                    }
+                });
+        
+                document.addEventListener('mouseup', function () {
+                    isDragging = false;
+                    tableContainer.style.cursor = "move";
+                });
+        
+                // Naptár inicializálása
+                scheduler.init("scheduler_here", new Date(), "month");
+        
+                // Átfedések elkerülése és események egymás alá helyezése
+                scheduler.config.prevent_overlapping = true; // Megakadályozza az átfedéseket
+                scheduler.config.multi_day = true; // Többnapos események támogatása
+                scheduler.config.auto_end_date = true; // Automatikus végdátum beállítás
+                scheduler.xy.bar_height = 30; // Az esemény magassága
+                scheduler.xy.scale_height = 70; // Naptár cellamagasság növelése
+                scheduler.config.first_hour = 0; // Órakezdés a nap elejétől
+                scheduler.config.last_hour = 24; // Órakezdés a nap végéig
+                scheduler.config.max_month_events = null; // Nincs korlátozás az események számára
+        
+                // Egységes szöveg- és színkezelés
+                scheduler.templates.event_text = function (start, end, event) {
+                    return `<div style="color: black; padding: 5px;">
+                                <strong>${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                                ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong><br>
+                                ${event.text}
+                            </div>`;
+                };
+                scheduler.templates.event_class = function () {
+                    return "default-event-style"; // Adj egyedi osztályt az eseményeknek
+                };
+                scheduler.templates.event_class = function (start, end, event) {
+                    if (event.text.includes("24 órás")) {
+                        return "event-24-hours"; // A "24 órás" műszakokra alkalmazott osztály
+                    }
+                    return ""; // Egyéb eseményekre nem adunk külön osztályt
+                };
+                
+        
+                // Egyedi sablon az események szövegéhez
+                    scheduler.templates.event_bar_text = function (start, end, event) {
+                        return (
+                            "<b>" +
+                            scheduler.templates.event_date(start) +
+                            " - " +
+                            scheduler.templates.event_date(end) +
+                            "</b><br/><i>" +
+                            event.text +
+                            "</i>"
+                        );
+                    };
+        
+                // Példa osztályok a színekhez
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    .event-color-ff0000 { background-color: #ff0000 !important; color: white !important; }
+                    .event-color-00ff00 { background-color: #00ff00 !important; color: white !important; }
+                    .event-color-0000ff { background-color: #0000ff !important; color: white !important; }
+                    .event-color-default { background-color: #d3d3d3 !important; color: black !important; }
+                `;
+                document.head.appendChild(style);
+        
+                // Teljes naptárnézet celláinak magasságának dinamikus beállítása
+                scheduler.attachEvent("onViewChange", function () {
+                    const days = document.querySelectorAll(".dhx_month_body td");
+                    days.forEach(day => {
+                        const events = day.querySelectorAll(".dhx_cal_event_line").length;
+                        const baseHeight = 70; // Alap magasság
+                        const additionalHeight = events * 10; // Extra magasság eseményenként
+                        day.style.height = `${baseHeight + additionalHeight}px`;
+                    });
+                });
+        
+                // Frissítjük a nézetet, hogy az új sablonok érvénybe lépjenek
+                scheduler.updateView();
+        });
+            // Hétvégi napok stílusozása
+            scheduler.templates.month_day = function (date) {
+                const day = date.getDate(); // A hónap napja
+                const events = scheduler.getEvents(date, new Date(date.getTime() + 24 * 60 * 60 * 1000)); // Az adott nap eseményei
+                const eventCount = events.length;
+            
+                let extraHeight = eventCount > 2 ? (eventCount - 2) * 25 : 0; // Növeli a cellát, ha több mint 2 esemény van
+                return `<div style="height: ${70 + extraHeight}px;">${day}</div>`;
+            };
+                
+            
+            // Eseménykezelők
+            scheduler.attachEvent("onEventAdded", function (id, event) {
+                scheduler.updateView();
+                saveEventsToLocalStorage();
+                console.log("Esemény hozzáadva:", event);
+            });
+            
+            scheduler.attachEvent("onEventChanged", function (id, event) {
+                scheduler.updateView();
+                saveEventsToLocalStorage();
+                console.log("Esemény módosítva:", event);
+            });
+            
+            scheduler.attachEvent("onEventDeleted", function (id) {
+                scheduler.updateView();
+                saveEventsToLocalStorage();
+                console.log("Esemény törölve, ID:", id);
+            });
+            
+            scheduler.attachEvent("onViewChange", function () {
+                const eventsPerDay = scheduler.getEvents().length;
+                const baseHeight = 70; // Alap magasság
+                const dayHeight = eventsPerDay * 30; // Növeld az események számának megfelelően
+                document.querySelector(".dhx_month_body").style.height = `${baseHeight + dayHeight}px`;
+            });
+            
+            // A cellamagasság dinamikus növelése
+            scheduler.templates.month_day = function (date) {
+                const day = date.getDate(); // A hónap napja
+                const events = scheduler.getEvents(date, new Date(date.getTime() + 24 * 60 * 60 * 1000)); // Az adott nap eseményei
+                const eventCount = events.length;
+            
+                let extraHeight = eventCount > 2 ? (eventCount - 2) * 25 : 0; // Növeli a cellát, ha több mint 2 esemény van
+                return `<div style="height: ${70 + extraHeight}px;">${day}</div>`;
+            };
+        function saveEventsToLocalStorage() {
+            const events = scheduler.getEvents().map(event => ({
+                start_date: event.start_date.toISOString(),
+                end_date: event.end_date.toISOString(),
+                text: event.text,
+                color: event.color || "#d3d3d3"
+            }));
+            localStorage.setItem("events", JSON.stringify(events));
+            console.log("Események mentve a localStorage-ba.");
+        }
+            
+        
+        function openFullExportView() {
+            saveEventsToLocalStorage(); // Mentés biztosítása
+        
+            const newWindow = window.open("export-view.html", "_blank");
+            if (!newWindow) {
+                alert("A böngésző blokkolta az új ablak megnyitását.");
+                return;
+            }
+        
+            // Események visszatöltése az export oldal bezárása után
+            newWindow.onbeforeunload = function () {
+                const restoredEvents = JSON.parse(localStorage.getItem("events"));
+                scheduler.clearAll();
+                scheduler.parse(restoredEvents, "json");
+                scheduler.updateView();
+            };
+        }
+        
+         
+
+            
+        
+        
+        function filterByMonthAndUpdate() {
+            // Szűrjük a hónap alapján
+            filterByMonth();
+            // Frissítjük az összesítő táblát is
+            updateSummaryTable();
+        }
+        
+        function filterByMonth() {
+            const selectedMonth = document.getElementById('monthFilter').value.trim();
+        
+            if (!selectedMonth) {
+                // Ha nincs szűrő, minden eseményt megmutatunk
+                scheduler.filter_month = null;
+            } else {
+                scheduler.filter_month = function (id, event) {
+                    // Az esemény hónapjának kinyerése
+                    const eventMonth = event.start_date.toLocaleString('hu-HU', { month: 'long' }).toLowerCase(); // Magyar hónap formátum
+                    return selectedMonth.toLowerCase() === eventMonth; // Összehasonlítás
+                };
+            }
+        
+            // Filter alkalmazása és naptár frissítése
+            scheduler.filter_month ? scheduler.filter_month : null;
+            scheduler.updateView();
+            updateSummaryTable(); // Az összesítő táblázat frissítése
+        }
+        
+        
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+        
+        function clearMergeArea() {
+            const mergeArea = document.getElementById('mergeArea');
+            setTimeout(() => {
+                while (mergeArea.firstChild) {
+                    mergeArea.removeChild(mergeArea.firstChild);
+                }
+                console.log("Egyesítő mező kiürítve aszinkron.");
+            }, 50); // Kis késleltetés az eltávolítások között
+        }
+        
+        
+        
+        function drag(ev) {
+            if (ev.target && (ev.target.id.startsWith("employee_") || ev.target.id.startsWith("shift_") || ev.target.id.startsWith("merged_"))) {
+                ev.dataTransfer.setData("text/plain", ev.target.id);
+            } else {
+                console.error("Nem megfelelő elem húzása:", ev.target);
+            }
+        }
+        
+        
+
+        function drop(ev) {
+            ev.preventDefault();
+            const data = ev.dataTransfer.getData("text/plain");
+            const node = document.getElementById(data);
+            const mergeArea = document.getElementById('mergeArea');
+        
+            // Hozzáadjuk az új elemet az egyesítő mezőhöz, ha az még nincs bent
+            if (!mergeArea.contains(node)) {
+                mergeArea.appendChild(node.cloneNode(true)); // Klónozzuk az elemet, hogy többször is lehessen használni
+            }
+        
+            console.log("Elem hozzáadva az egyesítő mezőhöz:", node.textContent);
+        }
+        
+        
+        
+        function addEmployee() {
+            const employeeList = document.getElementById('employeeList');
+            const employeeName = document.getElementById('newEmployeeName').value.trim();
+        
+            if (employeeName) {
+                const newEmployee = document.createElement('p');
+                newEmployee.className = 'employee-entry';
+                newEmployee.id = `employee_${employeeList.children.length + 1}`;
+                newEmployee.draggable = true;
+                newEmployee.ondragstart = drag;
+        
+                // Dolgozó neve külön span tagben
+                const employeeNameSpan = document.createElement('span');
+                employeeNameSpan.textContent = employeeName;
+                newEmployee.appendChild(employeeNameSpan);
+        
+                // Törlés gomb hozzáadása
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.innerHTML = 'x';
+                deleteButton.onclick = function() {
+                    employeeList.removeChild(newEmployee);
+                };
+        
+                newEmployee.appendChild(deleteButton);
+                employeeList.appendChild(newEmployee);
+        
+                // Szűrő frissítése (ha van ilyen funkció)
+                if (typeof updateEmployeeFilter === 'function') {
+                    updateEmployeeFilter();
+                }
+            } else {
+                alert('Kérjük, adja meg a dolgozó nevét!');
+            }
+        }
+        function dropOnScheduler(ev) {
+            ev.preventDefault();
+        
+            const data = ev.dataTransfer.getData("text/plain");
+            if (!data.startsWith("merged_")) {
+                console.error("Hibás elem húzása a naptárba:", data);
+                return;
+            }
+        
+            const mergedElement = document.getElementById(data);
+            if (!mergedElement) {
+                alert("Nem található az elem a húzás során!");
+                return;
+            }
+        
+            // Kivonjuk az employee és shift információkat
+            const [employee, shiftDetails] = mergedElement.textContent.split(" - ");
+            if (!employee || !shiftDetails) {
+                alert("Hiányzó dolgozó vagy műszak információ!");
+                return;
+            }
+        
+            const timePattern = /\d{2}:\d{2}/g;
+            const times = shiftDetails.match(timePattern);
+        
+            if (!times || times.length < 2) {
+                alert("Hibás műszak időformátum!");
+                return;
+            }
+        
+            const [startTime, endTime] = times;
+            const selectedDate = document.getElementById("eventDate").value;
+            if (!selectedDate) {
+                alert("Kérjük, válassz egy dátumot!");
+                return;
+            }
+        
+            const startDateTime = new Date(`${selectedDate}T${startTime}`);
+            const endDateTime = new Date(`${selectedDate}T${endTime}`);
+        
+            if (startTime > endTime) {
+                endDateTime.setDate(endDateTime.getDate() + 1); // Másnapig tartó műszak
+            }
+        
+            const shiftColor = mergedElement.style.backgroundColor || "#d3d3d3";
+        
+            // Esemény létrehozása a naptárban
+            const event = {
+                start_date: startDateTime,
+                end_date: endDateTime,
+                text: `${employee} - ${shiftDetails}`,
+                color: shiftColor
+            };
+        
+            const eventId = scheduler.addEvent(event);
+        
+            // Szín beállítása és esemény frissítése
+            scheduler.getEvent(eventId).color = shiftColor;
+            scheduler.updateEvent(eventId);
+        
+            // Osztály hozzárendelése a szín alapján
+            scheduler.templates.event_class = function (start, end, event) {
+                return `event-color-${event.color.replace("#", "")}`;
+            };
+        
+            console.log("Esemény hozzáadva:", event);
+            addDeleteButtonToEvent(eventId);
+        }
+    
+
+        document.getElementById("scheduler_here").addEventListener("drop", dropOnScheduler);
+        document.getElementById("scheduler_here").addEventListener("dragover", allowDrop);
+
+        
+
+        function mergeEntries() {
+            const mergeArea = document.getElementById('mergeArea');
+            const elements = mergeArea.querySelectorAll('p');
+            let employeeElement = null;
+            let shiftElement = null;
+        
+            // Dolgozó és műszak kiválasztása
+            elements.forEach(element => {
+                if (element.id.startsWith('employee')) {
+                    employeeElement = element;
+                } else if (element.id.startsWith('shift')) {
+                    shiftElement = element;
+                }
+            });
+        
+            if (employeeElement && shiftElement) {
+                const employeeName = employeeElement.textContent.replace('x', '').trim();
+                const shiftText = shiftElement.textContent;
+        
+                if (!employeeName || !shiftText.includes(":")) {
+                    alert("Hibás formátum az egyesített elem létrehozásakor.");
+                    return;
+                }
+        
+                // Új egyesített bejegyzés hozzáadása
+                addMergedEntry(employeeName, shiftText, shiftElement.style.backgroundColor);
+        
+                // Törlés a mergeArea-ból
+                if (mergeArea.contains(employeeElement)) {
+                    mergeArea.removeChild(employeeElement);
+                }
+                if (mergeArea.contains(shiftElement)) {
+                    mergeArea.removeChild(shiftElement);
+                }
+            } else {
+                alert("Kérjük, válasszon ki egy dolgozót és egy műszakot az egyesítéshez!");
+            }
+        }
+        
+        function addMergedEntry(employee, shift, color) {
+            const mergedEmployees = document.getElementById('mergedEmployees');
+            const mergedEntry = document.createElement('p');
+        
+            mergedEntry.className = 'merged-entry';
+            mergedEntry.textContent = `${employee} - ${shift}`;
+            mergedEntry.id = `merged_${mergedEmployees.children.length + 1}`;
+            mergedEntry.draggable = true;
+            mergedEntry.ondragstart = drag;
+            mergedEntry.style.backgroundColor = color || "#d3d3d3";
+        
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.innerHTML = 'x';
+            deleteButton.onclick = function () {
+                mergedEmployees.removeChild(mergedEntry);
+            };
+        
+            mergedEntry.appendChild(deleteButton);
+            mergedEmployees.appendChild(mergedEntry);
+        }
+        
+        
+
+        // Frissíti az összesítő táblázatot a naptár eseményei alapján
+        function updateSummaryTable() {
+            const summary = {}; // Egy összesítő objektum a dolgozók és hónapok alapján
+            const events = scheduler.getEvents();
+            const selectedEmployee = document.getElementById('employeeFilter').value.trim();
+            const selectedMonth = document.getElementById('monthFilter').value.trim();
+        
+            events.forEach(event => {
+                const employee = event.text.split(" - ")[0].trim();
+                const eventMonth = event.start_date.toLocaleString('default', { month: 'long' });
+        
+                if (
+                    (selectedEmployee && employee !== selectedEmployee) ||
+                    (selectedMonth && eventMonth.toLowerCase() !== selectedMonth.toLowerCase())
+                ) {
+                    return;
+                }
+        
+                const shiftKey = event.text.split(" - ")[1]?.split(":")[0].trim();
+                const duration = shiftDurations[shiftKey] || 0;
+        
+                if (!summary[employee]) {
+                    summary[employee] = {};
+                }
+        
+                if (!summary[employee][eventMonth]) {
+                    summary[employee][eventMonth] = 0;
+                }
+        
+                summary[employee][eventMonth] += duration;
+            });
+        
+            const summaryTableBody = document.getElementById('summaryTable').getElementsByTagName('tbody')[0];
+            summaryTableBody.innerHTML = ''; // Táblázat ürítése
+        
+            for (const employee in summary) {
+                for (const month in summary[employee]) {
+                    const row = document.createElement('tr');
+                    const nameCell = document.createElement('td');
+                    const monthCell = document.createElement('td');
+                    const hoursCell = document.createElement('td');
+                    const notesCell = document.createElement('td');
+        
+                    nameCell.textContent = employee;
+                    monthCell.textContent = month;
+                    hoursCell.textContent = summary[employee][month].toFixed(2) + ' óra';
+        
+                    const notesKey = `${employee}_${month}`;
+                    const notesTextarea = document.createElement('textarea');
+                    notesTextarea.value = notesData[notesKey] || "";
+                    notesTextarea.onchange = function () {
+                        notesData[notesKey] = notesTextarea.value;
+                    };
+                    notesCell.appendChild(notesTextarea);
+        
+                    row.appendChild(nameCell);
+                    row.appendChild(monthCell);
+                    row.appendChild(hoursCell);
+                    row.appendChild(notesCell);
+                    summaryTableBody.appendChild(row);
+                }
+            }
+        }
+        
+        
+        // Eseménykezelők az összesítő frissítéséhez
+        scheduler.attachEvent("onEventAdded", updateSummaryTable);
+        scheduler.attachEvent("onEventChanged", updateSummaryTable);
+        scheduler.attachEvent("onEventDeleted", updateSummaryTable);
+        
+        
+        
+        
+        
+        function filterByEmployee() {
+            const selectedEmployee = document.getElementById('employeeFilter').value.trim();
+        
+            scheduler.filter_month = function (id, event) {
+                const employeeName = event.text.split(" - ")[0].trim();
+                return selectedEmployee === "" || employeeName === selectedEmployee;
+            };
+        
+            scheduler.updateView();
+            updateSummaryTable(); // Az összesítő táblázatot is frissítjük
+        }
+        
+        
+        
+        
+
+        function loadEmployeesFromExcel(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const employeeList = document.getElementById('employeeList');
+                const employeeFilter = document.getElementById('employeeFilter');
+                jsonData.forEach((row, index) => {
+                    if (index > 0 && row[0]) {
+                        const newId = `employee_${employeeList.children.length + 1}`;
+                        const newEmployee = document.createElement('p');
+                        newEmployee.textContent = row[0];
+                        newEmployee.id = newId;
+                        newEmployee.draggable = true;
+                        newEmployee.ondragstart = drag;
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'delete-button';
+                        deleteButton.innerHTML = 'x';
+                        deleteButton.onclick = function() {
+                            employeeList.removeChild(newEmployee);
+                            updateEmployeeFilter();
+                        };
+
+                        newEmployee.appendChild(deleteButton);
+                        employeeList.appendChild(newEmployee);
+
+                        const option = document.createElement('option');
+                        option.value = row[0];
+                        option.textContent = row[0];
+                        employeeFilter.appendChild(option);
+                    }
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function loadShiftsFromExcel(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const shiftList = document.getElementById('shiftList');
+                jsonData.forEach((row, index) => {
+                    if (index > 0 && row[0]) {
+                        const newId = `shift_${shiftList.children.length + 1}`;
+                        const newShift = document.createElement('p');
+                        const startTime = convertExcelTime(row[1]);
+                        const endTime = convertExcelTime(row[2]);
+                        newShift.textContent = `${row[0]}: ${startTime}-${endTime} (${row[3]} óra)`;
+                        newShift.id = newId;
+                        newShift.draggable = true;
+                        newShift.ondragstart = drag;
+                        newShift.style.backgroundColor = row[4] ? row[4] : "#d3d3d3";
+                        newShift.style.color = "black";
+                        newShift.style.padding = "5px";
+                        newShift.style.borderRadius = "5px";
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'delete-button';
+                        deleteButton.innerHTML = 'x';
+                        deleteButton.onclick = function() {
+                            shiftList.removeChild(newShift);
+                        };
+
+                        newShift.appendChild(deleteButton);
+                        shiftList.appendChild(newShift);
+
+                        shiftDurations[row[0].trim()] = parseFloat(row[3]) || 0;
+                    }
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function convertExcelTime(excelTime) {
+            if (typeof excelTime === 'number') {
+                const totalMinutes = Math.round(excelTime * 24 * 60);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            }
+            return excelTime;
+        }
+
+        function saveScheduleToJSON() {
+            const events = scheduler.getEvents();
+            const data = {
+                events: events.map(event => ({
+                    start_date: event.start_date.toISOString(),
+                    end_date: event.end_date.toISOString(),
+                    employee: event.text.split(" - ")[0],
+                    shift: event.text.split(" - ")[1],
+                    color: event.color || "#d3d3d3"
+                })),
+                summary: [], // Összesítő táblázat adatai
+                notesData: notesData // Jegyzetek mentése
+            };
+            
+            
+            // Összesítő táblázat adatainak mentése
+            const summaryTableBody = document.getElementById('summaryTable').getElementsByTagName('tbody')[0];
+            const rows = summaryTableBody.getElementsByTagName('tr');
+            for (const row of rows) {
+                const employee = row.cells[0].textContent;
+                const month = row.cells[1].textContent;
+                const hours = parseFloat(row.cells[2].textContent);
+                const notes = row.cells[3].getElementsByTagName('input')[0]?.value || "";
+                data.summary.push({ employee, month, hours, notes });
+            }
+        
+            // Mentés JSON fájlba
+            const jsonData = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+        
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "munkaido_beosztas.json";
+            a.click();
+        
+            URL.revokeObjectURL(url);
+        }
+        
+        
+
+        function loadScheduleFromJSON() {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".json";
+            input.onchange = function (event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const jsonData = JSON.parse(e.target.result);
+        
+                        // Naptár események betöltése
+                        scheduler.clearAll();
+                        jsonData.events.forEach(item => {
+                            scheduler.addEvent({
+                                start_date: new Date(item.start_date),
+                                end_date: new Date(item.end_date),
+                                text: `${item.employee} - ${item.shift}`,
+                                color: item.color || "#d3d3d3"
+                            });
+                        });
+        
+                        // Jegyzetek betöltése a notesData objektumba
+                        notesData = jsonData.notesData || {};
+        
+                        // Összesítő táblázat betöltése
+                        const summary = jsonData.summary || [];
+                        const summaryTableBody = document.getElementById('summaryTable').getElementsByTagName('tbody')[0];
+                        summaryTableBody.innerHTML = '';
+        
+                        summary.forEach(item => {
+                            const row = document.createElement('tr');
+                            const nameCell = document.createElement('td');
+                            const monthCell = document.createElement('td');
+                            const hoursCell = document.createElement('td');
+                            const notesCell = document.createElement('td');
+        
+                            nameCell.textContent = item.employee;
+                            monthCell.textContent = item.month;
+                            hoursCell.textContent = item.hours.toFixed(2) + ' óra';
+        
+                            const notesInput = document.createElement('input');
+                            notesInput.type = 'text';
+                            notesInput.value = notesData[item.employee + "_" + item.month] || ""; // Jegyzetek betöltése
+                            notesInput.onchange = function () {
+                                notesData[item.employee + "_" + item.month] = notesInput.value; // Jegyzet mentése
+                            };
+                            notesCell.appendChild(notesInput);
+        
+                            row.appendChild(nameCell);
+                            row.appendChild(monthCell);
+                            row.appendChild(hoursCell);
+                            row.appendChild(notesCell);
+                            summaryTableBody.appendChild(row);
+                        });
+        
+                        updateSummaryTable();
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+        
+        
+
+        function exportToExcel() {
+            let events = scheduler.getEvents();
+            let data = [];
+            events.forEach(event => {
+                data.push({
+                    "Dolgozó": event.text.split(" - ")[0],
+                    "Műszak": event.text.split(" - ")[1],
+                    "Kezdés": event.start_date.toLocaleString(),
+                    "Befejezés": event.end_date.toLocaleString()
+                });
+            });
+
+            let ws = XLSX.utils.json_to_sheet(data);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Munkaidő Beosztás");
+
+            XLSX.writeFile(wb, "munkaido_beosztas.xlsx");
+        }
+
+        function exportToPDF() {
+            const schedulerElement = document.getElementById('scheduler_here');
+            
+            html2canvas(schedulerElement, { 
+                useCORS: true,
+                allowTaint: false 
+            }).then((canvas) => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: "landscape",
+                    unit: "mm",
+                    format: "a3"
+                });
+        
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+        
+                const imgWidth = pageWidth - 20; 
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+                const xOffset = (pageWidth - imgWidth) / 2;
+                const yOffset = 10;
+        
+                pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+                pdf.save('munkaido_beosztas.pdf');
+            });
+        }
+        
+
+        function exportToImage() {
+            const schedulerHeader = document.getElementById('scheduler_header');
+            const schedulerElement = document.getElementById('scheduler_here');
+            const summaryTableElement = document.getElementById('summaryTable');
+        
+            html2canvas(schedulerHeader, { useCORS: true, allowTaint: false }).then((headerCanvas) => {
+                html2canvas(schedulerElement, { useCORS: true, allowTaint: false }).then((schedulerCanvas) => {
+                    html2canvas(summaryTableElement, { useCORS: true, allowTaint: false }).then((summaryCanvas) => {
+                        const combinedCanvas = document.createElement('canvas');
+                        combinedCanvas.width = Math.max(headerCanvas.width, schedulerCanvas.width, summaryCanvas.width);
+                        combinedCanvas.height = headerCanvas.height + schedulerCanvas.height + summaryCanvas.height;
+        
+                        const ctx = combinedCanvas.getContext('2d');
+                        ctx.drawImage(headerCanvas, 0, 0);
+                        ctx.drawImage(schedulerCanvas, 0, headerCanvas.height);
+                        ctx.drawImage(summaryCanvas, 0, headerCanvas.height + schedulerCanvas.height);
+        
+                        const link = document.createElement('a');
+                        link.href = combinedCanvas.toDataURL('image/png');
+                        link.download = 'naptar_osszesito.png';
+                        link.click();
+                    });
+                });
+            });
+        }
+        
+        
+        
+        
+        
+    </script>
+    <footer id="footer" style="background-color: #4a90e2; color: white; padding: 20px; text-align: center; position: relative;">
+        <p>Fejér Vármegye Forgalmi Szolgálat </p>
+    </footer>
+    
+</body>
+</html>

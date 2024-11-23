@@ -1,0 +1,14 @@
+{
+  "name": "munkaido-beosztas",
+  "version": "1.0.0",
+  "description": "Munkaidő-beosztás alkalmazás",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}

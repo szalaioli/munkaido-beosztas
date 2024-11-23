@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teljes Naptár Nézet</title>
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/scheduler/edge/dhtmlxscheduler.css">
+    <script src="https://cdn.dhtmlx.com/scheduler/edge/dhtmlxscheduler.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        
+        #scheduler_header {
+            text-align: center;
+            margin: 0 auto;
+            padding: 20px 10px;
+            background: linear-gradient(90deg, #4a90e2, #357ab8);
+            color: white;
+            width: 98%;
+            max-width: 1600px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+            font-family: 'Georgia', 'Times New Roman', serif;
+            box-sizing: border-box;
+        }
+        
+        #scheduler_header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.1;
+        }
+        #scheduler_header p {
+            margin: 10px 0;
+            font-size: 16px;
+            font-style: italic;
+        }
+        #scheduler_header div {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        #scheduler_header input {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            width: 180px;
+            margin-left: 10px;
+        }
+        
+        #scheduler_here {
+            width: 98%;
+            height: 800px;
+            max-width: 1600px;
+            margin: 20px auto;
+            background-color: white;
+            border: 1px solid #0f0f0f;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .export-button {
+            margin-top: 20px;
+            background-color: #4a90e2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .export-button:hover {
+            background-color: #357ab8;
+        }
+        .dhx_cal_event_line, .dhx_cal_event_clear {
+            margin-bottom: 30px !important;
+            padding: 5px !important;
+            height: auto !important;
+            overflow: visible !important;
+            color: black !important; /* Átnyúló események betűszínének beállítása feketére */
+        }
+        .event-night-shift {
+            background-color: #333366 !important; /* Sötétkék háttérszín */
+            color: white !important; /* Fehér szöveg */
+        }
+    </style>
+</head>
+<body>
+    <div id="scheduler_header">
+        <h2>Fejér Vármegye Forgalmi Szolgálat</h2>
+        <p><strong>Munkavégzés helye:</strong> Székesfehérvár Piactér 4-8 Autóbusz pályaudvar</p>
+        <div>
+            <div>
+                <label for="preparedBy"><strong>Készítette:</strong></label>
+                <input type="text" id="preparedBy" placeholder="Név">
+                <span style="font-style: italic;">Forgalmi főmunkatárs</span>
+            </div>
+            <div>
+                <label for="approvedBy"><strong>Jóváhagyta:</strong></label>
+                <input type="text" id="approvedBy" placeholder="Név">
+                <span style="font-style: italic;">Forgalmi üzemvezető</span>
+            </div>
+        </div>
+    </div>
+    <div id="scheduler_here" class="dhx_cal_container"></div>
+    <button class="export-button" onclick="exportToImage()">Exportálás Képként</button>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            scheduler.config.header = [
+                "day",
+                "week",
+                "month",
+                "date",
+                "prev",
+                "today",
+                "next"
+            ];
+    
+            scheduler.templates.month_day = function (date) {
+                return "<span style='color: black; font-weight: bold;'>" + date.getDate() + "</span>";
+            };
+    
+            scheduler.init("scheduler_here", new Date(), "month");
+            const events = JSON.parse(localStorage.getItem('events')) || [];
+            scheduler.parse(events, "json");
+    
+            scheduler.attachEvent("onViewChange", function (mode, date) {
+                if (mode === "month") {
+                    updateMonthViewStyles();
+                }
+            });
+    
+            updateMonthViewStyles(); // Hónap nézet betöltése után
+    
+            // Funkció, amely frissíti a hónap nézet celláinak stílusát
+            function updateMonthViewStyles() {
+                setTimeout(() => {
+                    const monthCells = document.querySelectorAll(".dhx_month_body td");
+    
+                    monthCells.forEach(cell => {
+                        cell.style.border = '2px solid black'; // Vastag fekete szegély
+                        cell.style.padding = '10px';
+                    });
+                }, 100); // Kis késleltetés biztosítja, hogy minden betöltődött
+            }
+        });
+    
+        function exportToImage() {
+            const schedulerHeader = document.getElementById('scheduler_header');
+            const schedulerElement = document.getElementById('scheduler_here');
+            
+            // Ideiglenesen nagyítjuk a naptár magasságát, hogy az összes eseményt tartalmazza
+            const originalHeight = schedulerElement.style.height;
+            schedulerElement.style.height = '2000px'; // Elegendő magasság, hogy az összes esemény megjelenjen
+    
+            Promise.all([
+                html2canvas(schedulerHeader, { useCORS: true, scale: 2, logging: false }),
+                html2canvas(schedulerElement, { useCORS: true, scale: 2, logging: false })
+            ]).then(([headerCanvas, schedulerCanvas]) => {
+                const combinedCanvas = document.createElement('canvas');
+                combinedCanvas.width = Math.max(headerCanvas.width, schedulerCanvas.width);
+                combinedCanvas.height = headerCanvas.height + schedulerCanvas.height;
+    
+                const ctx = combinedCanvas.getContext('2d');
+                ctx.drawImage(headerCanvas, 0, 0);
+                ctx.drawImage(schedulerCanvas, 0, headerCanvas.height);
+    
+                const link = document.createElement('a');
+                link.href = combinedCanvas.toDataURL('image/png');
+                link.download = 'naptar_osszesito.png';
+                link.click();
+    
+                // Visszaállítjuk az eredeti magasságot
+                schedulerElement.style.height = originalHeight;
+            }).catch((error) => {
+                console.error('Hiba történt az exportálás során:', error);
+                
+                // Visszaállítjuk az eredeti magasságot, ha hiba történt
+                schedulerElement.style.height = originalHeight;
+            });
+        }
+    </script>
+</body>
+</html>
