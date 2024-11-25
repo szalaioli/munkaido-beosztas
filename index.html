@@ -1200,22 +1200,65 @@ select {
 
         function exportToExcel() {
             let events = scheduler.getEvents();
-            let data = [];
-            events.forEach(event => {
-                data.push({
-                    "Dolgozó": event.text.split(" - ")[0],
-                    "Műszak": event.text.split(" - ")[1],
-                    "Kezdés": event.start_date.toLocaleString(),
-                    "Befejezés": event.end_date.toLocaleString()
-                });
+            let filteredEvents = events.filter(event => {
+                const selectedEmployee = document.getElementById('employeeFilter').value.trim();
+                const selectedMonth = document.getElementById('monthFilter').value.trim();
+        
+                const employeeMatch = !selectedEmployee || event.text.split(" - ")[0].trim() === selectedEmployee;
+                const eventMonth = event.start_date.toLocaleString('default', { month: 'long' });
+                const monthMatch = !selectedMonth || eventMonth.toLowerCase() === selectedMonth.toLowerCase();
+        
+                return employeeMatch && monthMatch;
             });
-
-            let ws = XLSX.utils.json_to_sheet(data);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Munkaidő Beosztás");
-
-            XLSX.writeFile(wb, "munkaido_beosztas.xlsx");
+        
+            let htmlContent = `
+                <table border="1">
+                    <tr>
+                        <th>Dolgozó</th>
+                        <th>Műszak</th>
+                        <th>Kezdés</th>
+                        <th>Befejezés</th>
+                    </tr>
+            `;
+        
+            filteredEvents.forEach(event => {
+                const color = event.color || "#FFFFFF";
+                const hasValue = event.text && event.text.trim();
+                if (hasValue) {
+                    htmlContent += `
+                        <tr>
+                            <td${event.text.split(" - ")[0] ? ` style="background-color: ${color}"` : ''}>${event.text.split(" - ")[0]}</td>
+                            <td${event.text.split(" - ")[1] ? ` style="background-color: ${color}"` : ''}>${event.text.split(" - ")[1]}</td>
+                            <td${event.start_date ? ` style="background-color: ${color}"` : ''}>${event.start_date.toLocaleString()}</td>
+                            <td${event.end_date ? ` style="background-color: ${color}"` : ''}>${event.end_date.toLocaleString()}</td>
+                        </tr>
+                    `;
+                }
+            });
+        
+            htmlContent += `</table>`;
+        
+            const selectedEmployee = document.getElementById('employeeFilter').value.trim();
+            const selectedMonth = document.getElementById('monthFilter').value.trim();
+            let fileName = "munkaido_beosztas_szinekkel";
+            if (selectedEmployee) {
+                fileName = selectedEmployee;
+            }
+            if (selectedMonth) {
+                fileName += `_${selectedMonth}`;
+            }
+            fileName += ".xls";
+        
+            const blob = new Blob([htmlContent], { type: "application/vnd.ms-excel" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
+        
+        
 
         function exportToPDF() {
             const schedulerElement = document.getElementById('scheduler_here');
