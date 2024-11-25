@@ -340,11 +340,6 @@ select {
     color: black !important; /* Szöveg színe fekete */
     background-color: rgba(200, 200, 200, 0.5) !important; /* Opcionális: háttérszín */
 }
-/* Hónap nézet celláinak szegélyvastagságának növelése */
-.dhx_month_body td {
-    border: 8px solid #000; /* 3px vastagságú fekete szegély beállítása */
-    box-sizing: border-box; /* biztosítja, hogy a border a teljes cellához tartozzon */
-}
 
     </style>
 </head>
@@ -525,7 +520,13 @@ select {
                     if (event.text.includes("24 órás")) {
                         return "event-24-hours"; // A "24 órás" műszakokra alkalmazott osztály
                     }
-                    return ""; // Egyéb eseményekre nem adunk külön osztályt
+                    if (event.text.includes("éjszakás")) {
+                        return "night-shift-text"; // Az éjszakás műszakokra alkalmazott osztály
+                    }
+                    if (event.color) {
+                        return `event-color-${event.color.replace("#", "")}`;
+                    }
+                    return "";
                 };
                 
         
@@ -549,6 +550,15 @@ select {
                     .event-color-00ff00 { background-color: #00ff00 !important; color: white !important; }
                     .event-color-0000ff { background-color: #0000ff !important; color: white !important; }
                     .event-color-default { background-color: #d3d3d3 !important; color: black !important; }
+                    .event-24-hours {
+                            color: black !important; /* Szöveg színe fekete */
+                        }
+                    
+                        /* Általános stílus a többnapos események szövegének feketévé tételéhez */
+                        .dhx_cal_event_line,
+                        .dhx_cal_event_clear {
+                            color: black !important; /* Többnapos események szöveg színe fekete */
+                        }
                 `;
                 document.head.appendChild(style);
         
@@ -815,6 +825,16 @@ select {
             // Osztály hozzárendelése a szín alapján
             scheduler.templates.event_class = function (start, end, event) {
                 return `event-color-${event.color.replace("#", "")}`;
+                if (event.text.includes("24 órás")) {
+                        return "event-24-hours"; // 24 órás műszakokhoz alkalmazott osztály
+                    }
+                    if (event.text.includes("éjszakás")) {
+                        return "night-shift-text"; // Éjszakás műszakokhoz alkalmazott osztály
+                    }
+                    if (event.color) {
+                        return `event-color-${event.color.replace("#", "")}`;
+                    }
+                    return "";
             };
         
             console.log("Esemény hozzáadva:", event);
